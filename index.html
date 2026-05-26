@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaBoard - Lienzo Creativo Local</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- ==================== SPLASH LOADER ==================== -->
+  <div id="app-loader" class="loader-overlay">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <h2>LuminaBoard</h2>
+      <p>Cargando tu espacio creativo...</p>
+    </div>
+  </div>
+
+  <!-- ==================== PROJECT MANAGER (PANTALLA INICIAL) ==================== -->
+  <section id="project-manager" class="project-manager-screen">
+    <div class="pm-container">
+      <header class="pm-header">
+        <div class="pm-logo-area">
+          <div class="pm-logo-icon">
+            <i data-lucide="layout"></i>
+          </div>
+          <div>
+            <h1>LuminaBoard</h1>
+            <p>Tu lienzo visual local y base de datos de proyectos</p>
+          </div>
+        </div>
+        <button id="btn-new-project" class="btn btn-primary">
+          <i data-lucide="plus"></i> Nuevo Proyecto
+        </button>
+      </header>
+
+      <main class="pm-main">
+        <h2 class="section-title">Mis Proyectos Locales</h2>
+        <div id="projects-grid" class="projects-grid">
+          <!-- Projects list loaded dynamically -->
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ==================== CANVAS WORKSPACE (PANTALLA DE TRABAJO) ==================== -->
+  <section id="workspace" class="workspace-screen hidden">
+    
+    <!-- BARRA SUPERIOR (HEADER) -->
+    <header class="workspace-header">
+      <div class="header-left">
+        <button id="btn-back-projects" class="btn-icon-text" title="Volver a Proyectos">
+          <i data-lucide="arrow-left"></i> Proyectos
+        </button>
+        <span class="divider"></span>
+        <div id="breadcrumbs" class="breadcrumbs-container">
+          <!-- Breadcrumbs generated dynamically: Inicio > Sub-board -->
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <h2 id="current-board-title" contenteditable="true" class="board-title-editable" title="Haz clic para renombrar">Inicio</h2>
+      </div>
+
+      <div class="header-right">
+        <div id="sync-status" class="sync-status-indicator synced">
+          <i data-lucide="cloud-check" class="icon-synced"></i>
+          <i data-lucide="refresh-cw" class="icon-syncing spinner"></i>
+          <i data-lucide="alert-circle" class="icon-error"></i>
+          <span class="status-text">Guardado en Local</span>
+        </div>
+        <span class="divider"></span>
+        <button id="btn-export-json" class="btn-icon" title="Descargar copia del proyecto (.json)">
+          <i data-lucide="download"></i>
+        </button>
+        <button id="btn-export-png" class="btn-icon" title="Exportar tablero actual a Imagen PNG">
+          <i data-lucide="image"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- BARRA DE HERRAMIENTAS LATERAL (TOOLBAR) -->
+    <aside class="workspace-toolbar">
+      <div class="toolbar-section">
+        <span class="toolbar-label">Añadir elementos</span>
+        <button class="tool-btn" id="tool-note" draggable="true" title="Arrastra o haz clic para añadir una Nota">
+          <i data-lucide="sticky-note" class="color-note"></i>
+          <span>Nota</span>
+        </button>
+        <button class="tool-btn" id="tool-todo" draggable="true" title="Arrastra o haz clic para añadir una Lista de Tareas">
+          <i data-lucide="check-square" class="color-todo"></i>
+          <span>Tareas</span>
+        </button>
+        <button class="tool-btn" id="tool-board" draggable="true" title="Arrastra o haz clic para añadir un Sub-tablero">
+          <i data-lucide="folder" class="color-board"></i>
+          <span>Tablero</span>
+        </button>
+        <button class="tool-btn" id="tool-image" title="Añadir una Imagen (Local o URL)">
+          <i data-lucide="image" class="color-image"></i>
+          <span>Imagen</span>
+        </button>
+        <button class="tool-btn" id="tool-link" title="Añadir un Enlace Web">
+          <i data-lucide="link" class="color-link"></i>
+          <span>Enlace</span>
+        </button>
+      </div>
+      
+      <div class="toolbar-separator"></div>
+
+      <div class="toolbar-section">
+        <span class="toolbar-label">Herramientas</span>
+        <button class="tool-btn" id="tool-connect" title="Activa el modo conexión: haz clic en una tarjeta y luego en otra para conectarlas">
+          <i data-lucide="git-commit"></i>
+          <span>Conectar</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CANVAS VIEWPORT (EL AREA DEL LIENZO) -->
+    <main id="canvas-viewport" class="canvas-viewport">
+      
+      <!-- CONTENEDOR TRANSFORMABLE CON ZOOM Y DESPLAZAMIENTO -->
+      <div id="canvas-container" class="canvas-container">
+        
+        <!-- REJILLA DE FONDO INFINITA -->
+        <div class="canvas-grid-bg"></div>
+
+        <!-- CAPA SVG PARA LAS LINEAS DE CONEXION -->
+        <svg id="connections-svg" class="connections-layer"></svg>
+
+        <!-- CAPA DE TARJETA/ELEMENTOS -->
+        <div id="cards-container" class="cards-layer">
+          <!-- Cards loaded dynamically -->
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- CONTROLES FLOTANTES DE ZOOM Y NAVEGACIÓN -->
+    <div class="canvas-controls">
+      <button id="ctrl-zoom-out" class="ctrl-btn" title="Alejar (Zoom -)">
+        <i data-lucide="minus"></i>
+      </button>
+      <span id="ctrl-zoom-level" class="ctrl-text">100%</span>
+      <button id="ctrl-zoom-in" class="ctrl-btn" title="Acercar (Zoom +)">
+        <i data-lucide="plus"></i>
+      </button>
+      <button id="ctrl-zoom-fit" class="ctrl-btn" title="Centrar todos los elementos">
+        <i data-lucide="maximize"></i>
+      </button>
+    </div>
+
+    <!-- INSTRUCCIONES DE NAVEGACION FLOTANTES (PIE DE PAGINA) -->
+    <footer class="canvas-hints">
+      <span><kbd>Espacio + Arrastrar</kbd> o <kbd>Clic Central</kbd> para desplazarse</span>
+      <span class="dot">•</span>
+      <span><kbd>Doble Clic</kbd> para crear Nota rápida</span>
+    </footer>
+
+  </section>
+
+  <!-- ==================== MODALES FLOTANTES ==================== -->
+  
+  <!-- MODAL: AÑADIR ENLACE WEB -->
+  <div id="modal-link" class="modal-overlay hidden">
+    <div class="modal-card">
+      <header class="modal-header">
+        <h3><i data-lucide="link"></i> Añadir Enlace Web</h3>
+        <button class="modal-close btn-close-modal"><i data-lucide="x"></i></button>
+      </header>
+      <main class="modal-body">
+        <div class="form-group">
+          <label for="input-link-url">URL del Sitio Web</label>
+          <input type="url" id="input-link-url" placeholder="https://ejemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="input-link-title">Título (Opcional)</label>
+          <input type="text" id="input-link-title" placeholder="Ej. Inspiración de Tipografía">
+        </div>
+        <div class="form-group">
+          <label for="input-link-desc">Descripción (Opcional)</label>
+          <textarea id="input-link-desc" rows="3" placeholder="Añade un resumen de este sitio web..."></textarea>
+        </div>
+      </main>
+      <footer class="modal-footer">
+        <button class="btn btn-secondary btn-close-modal">Cancelar</button>
+        <button id="btn-save-link" class="btn btn-primary">Añadir al Tablero</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- MODAL: AÑADIR IMAGEN -->
+  <div id="modal-image" class="modal-overlay hidden">
+    <div class="modal-card">
+      <header class="modal-header">
+        <h3><i data-lucide="image"></i> Añadir Imagen</h3>
+        <button class="modal-close btn-close-modal"><i data-lucide="x"></i></button>
+      </header>
+      <main class="modal-body">
+        
+        <!-- Pestañas para Carga Local vs URL -->
+        <div class="modal-tabs">
+          <button class="tab-btn active" data-tab="tab-local">Subir Archivo Local</button>
+          <button class="tab-btn" data-tab="tab-url">Pegar Enlace (URL)</button>
+        </div>
+
+        <div id="tab-local" class="tab-content">
+          <div class="upload-dropzone" id="image-dropzone">
+            <i data-lucide="upload-cloud" class="upload-icon"></i>
+            <p>Arrastra tu imagen aquí o haz clic para buscar</p>
+            <span class="upload-limit">Formatos sugeridos: PNG, JPG, WEBP (Límite: 5MB)</span>
+            <input type="file" id="input-image-file" accept="image/*" class="hidden">
+          </div>
+          <div id="image-preview-container" class="image-preview-area hidden">
+            <img id="image-upload-preview" src="" alt="Vista previa">
+            <button id="btn-remove-preview" class="btn-danger-circle"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+
+        <div id="tab-url" class="tab-content hidden">
+          <div class="form-group">
+            <label for="input-image-url">URL de la Imagen de Internet</label>
+            <input type="url" id="input-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+          </div>
+          <div class="form-group">
+            <label for="input-image-title">Pie de Foto (Opcional)</label>
+            <input type="text" id="input-image-title" placeholder="Ej. Paleta de colores cálidos">
+          </div>
+        </div>
+
+      </main>
+      <footer class="modal-footer">
+        <button class="btn btn-secondary btn-close-modal">Cancelar</button>
+        <button id="btn-save-image" class="btn btn-primary" disabled>Añadir Imagen</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Main JavaScript File -->
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
